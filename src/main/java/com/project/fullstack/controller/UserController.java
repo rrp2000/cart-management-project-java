@@ -8,6 +8,7 @@ import com.project.fullstack.exception.UserServiceException;
 import com.project.fullstack.model.User;
 import com.project.fullstack.repository.UserRepository;
 import com.project.fullstack.service.impl.UserServiceImpl;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,9 +44,25 @@ public class UserController {
 
     @PostMapping("/signup")
     public ResponseEntity<BaseResponse> createUser(
-            @RequestBody User user
+            @Valid @RequestBody User user
     ){
         BaseResponse baseResponse = new BaseResponse();
+
+        if(user.getFirstName() == null || user.getFirstName().isEmpty()) {
+            throw new UserServiceException("First name cannot be empty", HttpStatus.BAD_REQUEST);
+        }
+        if(user.getLastName() == null || user.getLastName().isEmpty()) {
+            throw new UserServiceException("Last name cannot be empty", HttpStatus.BAD_REQUEST);
+        }
+        if(user.getEmail() == null || user.getEmail().isEmpty()) {
+            throw new UserServiceException("Email cannot be empty", HttpStatus.BAD_REQUEST);
+        }
+        if(user.getPhone() == null || user.getPhone().isEmpty()) {
+            throw new UserServiceException("Phone cannot be empty", HttpStatus.BAD_REQUEST);
+        }
+        if(user.getPassword() == null || user.getPassword().isEmpty()) {
+            throw new UserServiceException("Password cannot be empty", HttpStatus.BAD_REQUEST);
+        }
 
         Optional<User> existingUser = userRepository.findByEmail(user.getEmail());
         if(existingUser.isPresent()){

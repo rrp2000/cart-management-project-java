@@ -35,4 +35,10 @@ public class ApiError {
         this.status = status;
         this.message = String.valueOf("Something went wrong");
     }
+    public ApiError(HttpStatus status, String message, Object payload) {
+        this();
+        this.status = status;
+        this.message = message;
+        this.payload = payload;
+    }
 }
