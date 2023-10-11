@@ -7,6 +7,7 @@ import com.project.fullstack.config.JwtProvider;
 import com.project.fullstack.exception.UserServiceException;
 import com.project.fullstack.model.User;
 import com.project.fullstack.repository.UserRepository;
+import com.project.fullstack.service.UserService;
 import com.project.fullstack.service.impl.UserServiceImpl;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,10 +32,10 @@ import java.util.Optional;
 public class UserController {
 
     @Autowired
-    private UserRepository userRepository;
+    private UserServiceImpl userServiceImpl;
 
     @Autowired
-    private UserServiceImpl userServiceImpl;
+    private UserService userService;
 
     @Autowired
     private JwtProvider jwtProvider;
@@ -46,68 +47,16 @@ public class UserController {
     public ResponseEntity<BaseResponse> createUser(
             @Valid @RequestBody User user
     ){
-        BaseResponse baseResponse = new BaseResponse();
-
-        if(user.getFirstName() == null || user.getFirstName().isEmpty()) {
-            throw new UserServiceException("First name cannot be empty", HttpStatus.BAD_REQUEST);
-        }
-        if(user.getLastName() == null || user.getLastName().isEmpty()) {
-            throw new UserServiceException("Last name cannot be empty", HttpStatus.BAD_REQUEST);
-        }
-        if(user.getEmail() == null || user.getEmail().isEmpty()) {
-            throw new UserServiceException("Email cannot be empty", HttpStatus.BAD_REQUEST);
-        }
-        if(user.getPhone() == null || user.getPhone().isEmpty()) {
-            throw new UserServiceException("Phone cannot be empty", HttpStatus.BAD_REQUEST);
-        }
-        if(user.getPassword() == null || user.getPassword().isEmpty()) {
-            throw new UserServiceException("Password cannot be empty", HttpStatus.BAD_REQUEST);
-        }
-
-        Optional<User> existingUser = userRepository.findByEmail(user.getEmail());
-        if(existingUser.isPresent()){
-            throw new UserServiceException("User already exist with email: "+ user.getEmail(), HttpStatus.BAD_REQUEST);
-        }
-
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setCreatedAt(new Date());
-
-        User savedUser = userRepository.save(user);
-
-        baseResponse.setMessage("signup successful");
-        baseResponse.setPayload(savedUser);
-        baseResponse.setSuccess(true);
+       BaseResponse baseResponse = userService.saveUserDetails(user);
         return new ResponseEntity<>(baseResponse,HttpStatus.CREATED);
     }
 
     @PostMapping("/login")
-    public BaseResponse login(
+    public ResponseEntity<BaseResponse> login(
             @RequestBody LoginRequest loginRequest
     ){
-        BaseResponse baseResponse = new BaseResponse();
-
-        Authentication authentication = authenticate(loginRequest.getEmail(), loginRequest.getPassword());
-
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        String token = jwtProvider.generateToken(authentication);
-
-        baseResponse.setMessage("Login successful");
-        baseResponse.setPayload(new AuthResponse(token));
-        baseResponse.setSuccess(true);
-
-        return baseResponse;
+       BaseResponse baseResponse = userService.login(loginRequest);
+       return new ResponseEntity<>(baseResponse,HttpStatus.OK);
     }
 
-    private Authentication authenticate(String email, String password) {
-        UserDetails userDetails = userServiceImpl.loadUserByUsername(email);
-        if(userDetails == null){
-            throw new UserServiceException("Invalid credential", HttpStatus.BAD_REQUEST);
-        }
-        if(!passwordEncoder.matches(password,userDetails.getPassword())){
-            throw new UserServiceException("Invalid credential", HttpStatus.BAD_REQUEST);
-        }
-
-        return new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-    }
 }
